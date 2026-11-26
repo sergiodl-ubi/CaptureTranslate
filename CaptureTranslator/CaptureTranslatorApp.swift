@@ -1,3 +1,4 @@
+import FinderSync
 import SwiftUI
 
 @main
@@ -16,6 +17,10 @@ struct CaptureTranslatorApp: App {
 
             SettingsLink {
                 Label("Settings…", systemImage: "gear")
+            }
+
+            Button("Manage Finder Extension…") {
+                FIFinderSyncController.showExtensionManagementInterface()
             }
 
             Button("Quit CaptureTranslator") {

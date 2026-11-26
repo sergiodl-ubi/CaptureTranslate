@@ -1,20 +1,28 @@
 name: CaptureTranslator
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.ubi-lab
   deploymentTarget:
     macOS: "14.0"
 settings:
   base:
     SWIFT_VERSION: "5.9"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CAPTURE_TRANSLATOR_BUNDLE_PREFIX: com.ubi-lab
+    CAPTURE_TRANSLATOR_APP_GROUP: group.com.ubi-lab.CaptureTranslator
 targets:
   CaptureTranslator:
     type: application
     platform: macOS
+    attributes:
+      SystemCapabilities:
+        com.apple.ApplicationGroups.Mac:
+          enabled: 1
     sources:
       - path: CaptureTranslator
         excludes:
           - Info.plist
+          - CaptureTranslator.entitlements
+      - path: Shared
     info:
       path: CaptureTranslator/Info.plist
     dependencies:
@@ -22,22 +30,37 @@ targets:
         embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.CaptureTranslator
+        PRODUCT_BUNDLE_IDENTIFIER: $(CAPTURE_TRANSLATOR_BUNDLE_PREFIX).CaptureTranslator
         PRODUCT_NAME: CaptureTranslator
         CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: CaptureTranslator/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CaptureTranslator/CaptureTranslator.entitlements
   CaptureTranslatorFinderExtension:
     type: app-extension
     platform: macOS
+    attributes:
+      SystemCapabilities:
+        com.apple.ApplicationGroups.Mac:
+          enabled: 1
+        com.apple.Sandbox:
+          enabled: 1
     sources:
       - path: CaptureTranslatorFinderExtension
         excludes:
           - Info.plist
+          - CaptureTranslatorFinderExtension.entitlements
+      - path: Shared
     info:
       path: CaptureTranslatorFinderExtension/Info.plist
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.CaptureTranslator.FinderExtension
+        PRODUCT_BUNDLE_IDENTIFIER: $(CAPTURE_TRANSLATOR_BUNDLE_PREFIX).CaptureTranslator.FinderExtension
         PRODUCT_NAME: CaptureTranslatorFinderExtension
         CODE_SIGN_STYLE: Automatic
         APPLICATION_EXTENSION_API_ONLY: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: CaptureTranslatorFinderExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CaptureTranslatorFinderExtension/CaptureTranslatorFinderExtension.entitlements
+        ENABLE_APP_SANDBOX: YES
         SKIP_INSTALL: YES
