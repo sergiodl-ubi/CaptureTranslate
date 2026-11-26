@@ -75,19 +75,23 @@ private struct FinderFoldersSettingsView: View {
                 .foregroundStyle(.secondary)
 
             List(selection: $selection) {
-                ForEach(store.folders) { folder in
+                ForEach(store.folders, id: \.id) { (folder: MonitoredFolder) in
                     HStack(spacing: 10) {
                         Toggle(
                             "",
-                            isOn: Binding(
+                            isOn: Binding<Bool>(
                                 get: { folder.isEnabled },
-                                set: { store.setEnabled($0, for: folder.id) }
+                                set: { isEnabled in
+                                    store.setEnabled(isEnabled, for: folder.id)
+                                }
                             )
                         )
                         .labelsHidden()
 
                         Image(systemName: "folder")
-                            .foregroundStyle(store.folderExists(folder) ? .secondary : .red)
+                            .foregroundStyle(
+                                store.folderExists(folder) ? Color.secondary : Color.red
+                            )
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(folder.displayName)
@@ -140,7 +144,7 @@ private struct FinderFoldersSettingsView: View {
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
             } else {
-                let enabled = FIFinderSyncController.extensionEnabled
+                let enabled = FIFinderSyncController.isExtensionEnabled
                 Label(
                     enabled ? "Finder extension enabled" : "Finder extension disabled",
                     systemImage: enabled ? "checkmark.circle.fill" : "exclamationmark.circle"

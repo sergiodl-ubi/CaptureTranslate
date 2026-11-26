@@ -2,6 +2,7 @@ import Foundation
 
 enum PDFTranslationError: LocalizedError {
     case magickNotFound
+    case ghostscriptNotFound
     case conversionFailed(String)
     case noPages
 
@@ -9,6 +10,8 @@ enum PDFTranslationError: LocalizedError {
         switch self {
         case .magickNotFound:
             return "ImageMagick was not found. Install it with ‘brew install imagemagick ghostscript’."
+        case .ghostscriptNotFound:
+            return "Ghostscript was not found. Install it with ‘brew install ghostscript’, then relaunch CaptureTranslator."
         case .conversionFailed(let output):
             return "ImageMagick could not render the PDF: \(output)"
         case .noPages:
@@ -57,9 +60,18 @@ enum PDFTranslationService {
 
     private static func renderPDF(_ source: URL, into directory: URL) async throws -> [URL] {
         guard let magick = magickExecutable() else { throw PDFTranslationError.magickNotFound }
+        guard let ghostscript = ghostscriptExecutable() else {
+            throw PDFTranslationError.ghostscriptNotFound
+        }
         let outputPattern = directory.appendingPathComponent("page-%04d.png").path
         let process = Process()
         process.executableURL = magick
+        process.environment = commandEnvironment(
+            executableDirectories: [
+                ghostscript.deletingLastPathComponent(),
+                magick.deletingLastPathComponent()
+            ]
+        )
         process.arguments = [
             "-density", String(AppSettings.pdfDensity),
             source.path,
@@ -93,5 +105,26 @@ enum PDFTranslationService {
         ["/opt/homebrew/bin/magick", "/usr/local/bin/magick", "/opt/local/bin/magick"]
             .first(where: { FileManager.default.isExecutableFile(atPath: $0) })
             .map { URL(fileURLWithPath: $0) }
+    }
+
+    private static func ghostscriptExecutable() -> URL? {
+        ["/opt/homebrew/bin/gs", "/usr/local/bin/gs", "/opt/local/bin/gs", "/usr/bin/gs"]
+            .first(where: { FileManager.default.isExecutableFile(atPath: $0) })
+            .map { URL(fileURLWithPath: $0) }
+    }
+
+    private static func commandEnvironment(executableDirectories: [URL]) -> [String: String] {
+        var environment = ProcessInfo.processInfo.environment
+        let inheritedPaths = environment["PATH"]?
+            .split(separator: ":")
+            .map(String.init) ?? []
+        let requiredPaths = executableDirectories.map(\.path)
+        let fallbackPaths = ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+
+        var seen = Set<String>()
+        environment["PATH"] = (requiredPaths + inheritedPaths + fallbackPaths)
+            .filter { seen.insert($0).inserted }
+            .joined(separator: ":")
+        return environment
     }
 }
